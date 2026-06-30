@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dynamic Work Cost Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #020617;
+      --card: #111827;
+      --accent: #22c55e;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --danger: #ef4444;
+      --border: rgba(148, 163, 184, 0.2);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, var(--bg) 55%, #020617 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .app {
+      max-width: 1080px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 24px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; margin: 16px 0 20px; }
+    button {
+      border:none; border-radius:999px; padding:10px 14px; font-weight:600; cursor:pointer;
+    }
+    .primary { background: linear-gradient(135deg, var(--accent), #4ade80); color:#052e16; }
+    .secondary { background: rgba(148,163,184,0.16); color:var(--text); border:1px solid rgba(148,163,184,0.2); }
+    .danger { background: rgba(239,68,68,0.16); color:#fecaca; border:1px solid rgba(239,68,68,0.25); }
+    .grid { display:grid; grid-template-columns: 1.1fr 0.9fr; gap:18px; }
+    @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } }
+    .panel {
+      background: radial-gradient(circle at top left, rgba(15,118,110,0.18), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(37,99,235,0.22), transparent 55%),
+                  var(--card);
+      border-radius: 14px;
+      padding: 16px;
+      border: 1px solid rgba(55,65,81,0.8);
+    }
+    .panel h2 { margin: 0 0 10px; font-size:0.95rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--muted); }
+    .category-list { display:flex; flex-direction:column; gap:12px; }
+    .card {
+      background: rgba(15,23,42,0.82);
+      border:1px solid rgba(55,65,81,0.9);
+      border-radius:12px;
+      padding:12px;
+    }
+    .card-header { display:flex; justify-content:space-between; gap:10px; align-items:flex-start; margin-bottom:10px; }
+    .card-title { font-size:1rem; font-weight:700; }
+    .card-subtitle { color:var(--muted); font-size:0.87rem; margin-top:2px; }
+    .card-actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .mode-toggle { display:flex; gap:6px; flex-wrap:wrap; margin: 8px 0 12px; }
+    .mode-toggle button {
+      padding: 7px 10px; font-size: 0.85rem; border: 1px solid rgba(148,163,184,0.2);
+      background: rgba(15,23,42,0.8); color: var(--muted); border-radius: 999px;
+    }
+    .mode-toggle button.active {
+      background: rgba(34,197,94,0.2); color: #dcfce7; border-color: rgba(34,197,94,0.4);
+    }
+    .control { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+    .control-label { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:0.9rem; }
+    .control-value { color:var(--text); font-weight:600; }
+    input[type="range"] {
+      -webkit-appearance:none; appearance:none; width:100%; height:6px; border-radius:999px;
+      background: linear-gradient(90deg, rgba(34,197,94,0.25), rgba(31,41,55,0.95));
+      outline:none; cursor:col-resize; touch-action:manipulation;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none; appearance:none; width:18px; height:18px; border-radius:50%;
+      background:#ecfdf5; border:2px solid var(--accent); box-shadow:0 0 0 4px rgba(34,197,94,0.35);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width:18px; height:18px; border-radius:50%; background:#ecfdf5; border:2px solid var(--accent);
+      box-shadow:0 0 0 4px rgba(34,197,94,0.35);
+    }
+    input[type="number"], input[type="text"] {
+      width:100%; border:1px solid rgba(148,163,184,0.2); background:rgba(2,6,23,0.7); color:var(--text);
+      border-radius:10px; padding:10px 12px; font-size:0.95rem;
+    }
+    .cost-row { display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid rgba(255,255,255,0.08); margin-top:6px; font-size:0.95rem; }
+    .summary-card {
+      background: rgba(52,211,153,0.12); border:1px solid rgba(52,211,153,0.2); border-radius:12px; padding:14px;
+      margin-top:10px;
+    }
+    .summary-label { color:#86efac; font-size:0.9rem; margin-bottom:6px; }
+    .summary-value { font-size:1.6rem; font-weight:700; color:#86efac; }
+    .summary-meta { color:var(--muted); font-size:0.9rem; margin-top:6px; }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(2,6,23,0.72); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50; }
+    .modal-backdrop.hidden { display:none; }
+    .modal { width:min(100%, 460px); background:#0f172a; border:1px solid rgba(148,163,184,0.25); border-radius:14px; padding:18px; box-shadow:0 24px 60px rgba(0,0,0,0.45); }
+    .modal h3 { margin:0 0 12px; font-size:1.1rem; }
+    .modal-form { display:flex; flex-direction:column; gap:12px; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .checkbox-row { display:flex; align-items:center; gap:8px; color:var(--muted); }
+    .modal-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+    .empty-state { border:1px dashed rgba(148,163,184,0.24); border-radius:12px; padding:16px; color:var(--muted); text-align:center; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1 style="margin:0 0 6px; font-size:clamp(1.4rem, 2.2vw, 1.8rem);">Dynamic work cost calculator</h1>
+    <p style="margin:0; color:var(--muted);">Edit rates, adjust hours and weeks, and keep totals up to date in real time.</p>
+
+    <div class="toolbar">
+      <button id="addCategoryBtn" class="primary" type="button">Add category</button>
+      <button id="globalRateBtn" class="secondary" type="button">Edit global rate</button>
+    </div>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>Work categories</h2>
+        <div id="categoriesList" class="category-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2>Summary</h2>
+        <div class="summary-card">
+          <div class="summary-label">Weekly total</div>
+          <div id="weeklyTotal" class="summary-value">€0</div>
+          <div class="summary-meta">Hours × rate across all categories.</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Annual total</div>
+          <div id="annualTotal" class="summary-value">€0</div>
+          <div class="summary-meta">Weekly cost × effective weeks worked.</div>
+          <div id="annualNetVoice" class="summary-meta" style="margin-top:8px; color:#fde68a;"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="modalBackdrop" class="modal-backdrop hidden">
+    <div class="modal">
+      <h3 id="modalTitle">Add category</h3>
+      <form id="modalForm" class="modal-form">
+        <div id="modalNameField" class="field">
+          <label for="modalName">Category name</label>
+          <input id="modalName" type="text" name="name" placeholder="Teaching" required />
+        </div>
+        <div class="field">
+          <label for="modalRate">Rate</label>
+          <input id="modalRate" type="number" name="rate" min="0" step="0.5" required />
+        </div>
+        <label class="checkbox-row" for="modalInherit">
+          <input id="modalInherit" type="checkbox" name="inherit" checked />
+          <span>Use the global rate</span>
+        </label>
+        <div class="modal-actions">
+          <button id="modalCancel" class="secondary" type="button">Cancel</button>
+          <button class="primary" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const state = {
+      globalRate: 20,
+      categories: [
+        { id: crypto.randomUUID(), name: 'In class', rate: 20, value: 5, weeks: 40, daysPerYear: 200, maxHours: 10, workMode: 'hours', inheritRate: true },
+        { id: crypto.randomUUID(), name: 'Extra classes', rate: 20, value: 5, weeks: 40, daysPerYear: 200, maxHours: 10, workMode: 'hours', inheritRate: true },
+        { id: crypto.randomUUID(), name: 'IT', rate: 10, value: 5, weeks: 40, daysPerYear: 200, maxHours: 40, workMode: 'hours', inheritRate: true }
+      ],
+      modal: { mode: 'add', categoryId: null }
+    };
+
+    const categoriesList = document.getElementById('categoriesList');
+    const weeklyTotal = document.getElementById('weeklyTotal');
+    const annualTotal = document.getElementById('annualTotal');
+    const annualNetVoice = document.getElementById('annualNetVoice');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalNameField = document.getElementById('modalNameField');
+    const modalName = document.getElementById('modalName');
+    const modalRate = document.getElementById('modalRate');
+    const modalInherit = document.getElementById('modalInherit');
+    const modalForm = document.getElementById('modalForm');
+    const addCategoryBtn = document.getElementById('addCategoryBtn');
+    const globalRateBtn = document.getElementById('globalRateBtn');
+    const modalCancel = document.getElementById('modalCancel');
+
+    function formatCurrency(value, minimumFractionDigits = 0, maximumFractionDigits = 0) {
+      return new Intl.NumberFormat('en-IE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits,
+        maximumFractionDigits
+      }).format(value);
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(Math.max(value, min), max);
+    }
+
+    function getEffectiveWeeks(value) {
+      return clamp(Math.round(Number(value) || 1), 1, 52);
+    }
+
+    function getEffectiveDays(value) {
+      return clamp(Math.round(Number(value) || 1), 1, 365);
+    }
+
+    function getUnitLabel(category) {
+      if (category.workMode === 'half-day') return 'Half-days / week';
+      if (category.workMode === 'whole-day') return 'Whole-days / week';
+      return 'Hours / week';
+    }
+
+    function getPeriodLabel(category) {
+      return category.workMode === 'hours' ? 'Weeks / year' : 'Days / year';
+    }
+
+    function getMaxUnits(category) {
+      if (category.workMode === 'half-day') return 10;
+      if (category.workMode === 'whole-day') return 5;
+      return category.maxHours;
+    }
+
+    function getWeeklyHours(category) {
+      if (category.workMode === 'half-day') return category.value * 4;
+      if (category.workMode === 'whole-day') return category.value * 8;
+      return category.value;
+    }
+
+    function getWeeklyCost(category) {
+      if (category.workMode === 'hours') {
+        return getWeeklyHours(category) * category.rate;
+      }
+      return 0;
+    }
+
+    function getAnnualCost(category) {
+      if (category.workMode === 'hours') {
+        return getWeeklyCost(category) * getEffectiveWeeks(category.weeks);
+      }
+      return getWeeklyHours(category) * category.rate * (getEffectiveDays(category.daysPerYear) / 5);
+    }
+
+    function getAnnualNetFromAnnualTotal(annualTotalValue) {
+      const taxableIncome = annualTotalValue * 0.78;
+      const totalTaxAndContributions = taxableIncome * (0.2607 + 0.05);
+      return taxableIncome - totalTaxAndContributions;
+    }
+
+    function updateCategoryCard(category) {
+      const card = categoriesList.querySelector(`.card[data-id="${category.id}"]`);
+      if (!card) return;
+
+      const effectiveWeeks = getEffectiveWeeks(category.weeks);
+      const effectiveDays = getEffectiveDays(category.daysPerYear);
+      const weeklyCost = getWeeklyCost(category);
+      const annualCost = getAnnualCost(category);
+
+      card.querySelector('.hours-control-value').textContent = `${category.value} ${category.workMode === 'hours' ? 'h' : category.workMode === 'half-day' ? 'hd' : 'wd'}`;
+      card.querySelector('.weeks-control-value').textContent = `${category.workMode === 'hours' ? effectiveWeeks : effectiveDays} ${category.workMode === 'hours' ? 'w' : 'd'}`;
+      card.querySelector('.weekly-cost-value').textContent = category.workMode === 'hours' ? formatCurrency(weeklyCost) : '—';
+      card.querySelector('.annual-cost-value').textContent = formatCurrency(annualCost);
+    }
+
+    function renderCategories() {
+      if (!state.categories.length) {
+        categoriesList.innerHTML = '<div class="empty-state">No categories yet. Add one to start tracking costs.</div>';
+        return;
+      }
+
+      categoriesList.innerHTML = '';
+      state.categories.forEach((category) => {
+        const effectiveWeeks = getEffectiveWeeks(category.weeks);
+        const effectiveDays = getEffectiveDays(category.daysPerYear);
+        const weeklyCost = getWeeklyCost(category);
+        const annualCost = getAnnualCost(category);
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.dataset.id = category.id;
+        card.innerHTML = `
+          <div class="card-header">
+            <div>
+              <div class="card-title">${category.name}</div>
+              <div class="card-subtitle">${category.inheritRate ? `Uses global rate · €${state.globalRate}/hour` : `Custom rate · €${category.rate}/hour`}</div>
+            </div>
+            <div class="card-actions">
+              <button class="secondary" data-action="edit-rate" data-id="${category.id}" type="button">Edit rate</button>
+              <button class="danger" data-action="delete" data-id="${category.id}" type="button">Delete</button>
+            </div>
+          </div>
+          <div class="mode-toggle">
+            <button class="${category.workMode === 'hours' ? 'active' : ''}" data-mode="hours" data-id="${category.id}" type="button">Hours</button>
+            <button class="${category.workMode === 'half-day' ? 'active' : ''}" data-mode="half-day" data-id="${category.id}" type="button">Half day</button>
+            <button class="${category.workMode === 'whole-day' ? 'active' : ''}" data-mode="whole-day" data-id="${category.id}" type="button">Whole day</button>
+          </div>
+          <div class="control">
+            <div class="control-label">
+              <span>${getUnitLabel(category)}</span>
+              <span class="control-value hours-control-value">${category.value} ${category.workMode === 'hours' ? 'h' : category.workMode === 'half-day' ? 'hd' : 'wd'}</span>
+            </div>
+            <input class="hours-slider" data-id="${category.id}" type="range" min="0" max="${getMaxUnits(category)}" step="1" value="${category.value}" />
+          </div>
+          <div class="control">
+            <div class="control-label">
+              <span>${getPeriodLabel(category)}</span>
+              <span class="control-value weeks-control-value">${category.workMode === 'hours' ? effectiveWeeks : effectiveDays} ${category.workMode === 'hours' ? 'w' : 'd'}</span>
+            </div>
+            <input class="weeks-slider" data-id="${category.id}" type="range" min="1" max="${category.workMode === 'hours' ? 52 : 365}" step="1" value="${category.workMode === 'hours' ? effectiveWeeks : effectiveDays}" />
+          </div>
+          <div class="cost-row"><span>Weekly cost</span><strong class="weekly-cost-value">${category.workMode === 'hours' ? formatCurrency(weeklyCost) : '—'}</strong></div>
+          <div class="cost-row"><span>Annual cost</span><strong class="annual-cost-value">${formatCurrency(annualCost)}</strong></div>`;
+        categoriesList.appendChild(card);
+      });
+
+      categoriesList.querySelectorAll('.hours-slider').forEach((input) => {
+        input.addEventListener('input', (event) => {
+          const category = state.categories.find((item) => item.id === event.target.dataset.id);
+          if (!category) return;
+          category.value = Math.round(Number(event.target.value));
+          updateCategoryCard(category);
+          renderSummary();
+        });
+      });
+
+      categoriesList.querySelectorAll('.weeks-slider').forEach((input) => {
+        input.addEventListener('input', (event) => {
+          const category = state.categories.find((item) => item.id === event.target.dataset.id);
+          if (!category) return;
+          category.weeks = getEffectiveWeeks(event.target.value);
+          category.daysPerYear = getEffectiveDays(event.target.value);
+          updateCategoryCard(category);
+          renderSummary();
+        });
+      });
+    }
+
+    function renderSummary() {
+      const weekly = state.categories.reduce((sum, category) => sum + getWeeklyCost(category), 0);
+      const annual = state.categories.reduce((sum, category) => sum + getAnnualCost(category), 0);
+      const annualNet = getAnnualNetFromAnnualTotal(annual);
+      weeklyTotal.textContent = formatCurrency(weekly);
+      annualTotal.textContent = formatCurrency(annual);
+      annualNetVoice.textContent = `Annual net amount is ${formatCurrency(annualNet, 2, 2)}.`;
+    }
+
+    function render() {
+      renderCategories();
+      renderSummary();
+    }
+
+    function openModal(mode, categoryId = null) {
+      state.modal.mode = mode;
+      state.modal.categoryId = categoryId;
+
+      if (mode === 'add') {
+        modalTitle.textContent = 'Add category';
+        modalNameField.style.display = 'flex';
+        modalName.disabled = false;
+        modalName.required = true;
+        modalName.value = '';
+        modalRate.value = state.globalRate;
+        modalInherit.checked = true;
+      } else if (mode === 'edit-rate') {
+        const category = state.categories.find((item) => item.id === categoryId);
+        if (!category) return;
+        modalTitle.textContent = `Edit rate · ${category.name}`;
+        modalNameField.style.display = 'none';
+        modalName.disabled = true;
+        modalName.required = false;
+        modalRate.value = category.inheritRate ? state.globalRate : category.rate;
+        modalInherit.checked = category.inheritRate;
+      } else if (mode === 'global-rate') {
+        modalTitle.textContent = 'Edit global rate';
+        modalNameField.style.display = 'none';
+        modalName.disabled = true;
+        modalName.required = false;
+        modalRate.value = state.globalRate;
+        modalInherit.checked = false;
+      }
+
+      modalBackdrop.classList.remove('hidden');
+    }
+
+    function closeModal() {
+      modalBackdrop.classList.add('hidden');
+    }
+
+    modalForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+
+      if (state.modal.mode === 'add') {
+        const name = modalName.value.trim();
+        if (!name) return;
+        const nextRate = Number(modalRate.value);
+        const inheritRate = modalInherit.checked;
+        state.categories.push({
+          id: crypto.randomUUID(),
+          name,
+          rate: inheritRate ? state.globalRate : (Number.isFinite(nextRate) ? nextRate : state.globalRate),
+          value: 5,
+          weeks: 40,
+          daysPerYear: 200,
+          maxHours: 40,
+          workMode: 'hours',
+          inheritRate
+        });
+      } else if (state.modal.mode === 'edit-rate') {
+        const category = state.categories.find((item) => item.id === state.modal.categoryId);
+        if (category) {
+          const nextRate = Number(modalRate.value);
+          category.inheritRate = modalInherit.checked;
+          category.rate = modalInherit.checked ? state.globalRate : (Number.isFinite(nextRate) ? nextRate : state.globalRate);
+        }
+      } else if (state.modal.mode === 'global-rate') {
+        const nextRate = Number(modalRate.value);
+        if (Number.isFinite(nextRate) && nextRate >= 0) {
+          state.globalRate = nextRate;
+          state.categories.forEach((category) => {
+            if (category.inheritRate) {
+              category.rate = state.globalRate;
+            }
+          });
+        }
+      }
+
+      render();
+      closeModal();
+    });
+
+    categoriesList.addEventListener('click', (event) => {
+      const modeButton = event.target.closest('button[data-mode]');
+      if (modeButton) {
+        const category = state.categories.find((item) => item.id === modeButton.dataset.id);
+        if (category) {
+          category.workMode = modeButton.dataset.mode;
+          render();
+        }
+        return;
+      }
+
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const action = button.dataset.action;
+      const id = button.dataset.id;
+
+      if (action === 'edit-rate') {
+        openModal('edit-rate', id);
+      } else if (action === 'delete') {
+        const category = state.categories.find((item) => item.id === id);
+        if (!category) return;
+        if (window.confirm(`Delete "${category.name}"?`)) {
+          state.categories = state.categories.filter((item) => item.id !== id);
+          render();
+        }
+      }
+    });
+
+    addCategoryBtn.addEventListener('click', () => openModal('add'));
+    globalRateBtn.addEventListener('click', () => openModal('global-rate'));
+    modalCancel.addEventListener('click', closeModal);
+    modalBackdrop.addEventListener('click', (event) => {
+      if (event.target === modalBackdrop) {
+        closeModal();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>

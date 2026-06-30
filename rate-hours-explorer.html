@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rate &amp; Hours Explorer — Forfettario vs Ordinario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#ECE7D6;
+    --paper-deep:#E2DCC6;
+    --ink:#1E2422;
+    --ink-soft:#4B5249;
+    --stamp:#A8392C;
+    --stamp-soft:#C75B45;
+    --gold:#B9852C;
+    --gold-bg:#F3DFA8;
+    --teal:#2C6357;
+    --teal-bg:#DCE8DD;
+    --line:#C9C0A4;
+    --good:#2C6357;
+    --bad:#A8392C;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 28px 28px;
+    background-attachment: fixed;
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:15px;
+    line-height:1.45;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+
+  /* ---------- header ---------- */
+  header.doc-head{
+    background:var(--paper-deep);
+    border-bottom:3px double var(--ink);
+    padding:28px 0 20px;
+    position:relative;
+  }
+  .doc-ref{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    display:flex;justify-content:space-between;
+    margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:clamp(28px,4vw,42px);
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .subtitle{
+    font-size:14.5px;
+    color:var(--ink-soft);
+    max-width:640px;
+  }
+  .reset-btn{
+    position:absolute; top:28px; right:24px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    background:transparent;
+    border:1px solid var(--ink);
+    color:var(--ink);
+    padding:8px 14px;
+    border-radius:var(--radius);
+    cursor:pointer;
+  }
+  .reset-btn:hover{background:var(--ink);color:var(--paper);}
+
+  /* ---------- nav tabs ---------- */
+  nav.tabs{
+    position:sticky; top:0; z-index:30;
+    background:var(--ink);
+    display:flex; gap:2px;
+    padding:0 24px;
+    overflow-x:auto;
+  }
+  nav.tabs a{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:#CFC9B4;
+    text-decoration:none;
+    padding:12px 16px;
+    white-space:nowrap;
+    border-bottom:2px solid transparent;
+  }
+  nav.tabs a:hover{color:#fff;border-bottom-color:var(--gold);}
+
+  /* ---------- hero ---------- */
+  .hero{padding:30px 0 8px;}
+  .hero h2.section-label{margin-bottom:4px;}
+  .hero-note{color:var(--ink-soft);font-size:13.5px;margin:0 0 18px;}
+  .hero-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:16px;
+  }
+  .hero-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 18px 18px;
+    position:relative;
+    box-shadow:0 1px 0 var(--line);
+  }
+  .hero-card h3{
+    font-family:'Fraunces',serif;
+    font-weight:500;
+    font-size:16px;
+    margin:0 0 12px;
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .hero-card h3 .hrs{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;font-weight:400;color:var(--ink-soft);
+  }
+  .hero-row{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-top:1px solid #EDE9DA;}
+  .hero-row:first-of-type{border-top:none;}
+  .hero-row .lbl{font-size:12.5px;color:var(--ink-soft);}
+  .hero-row .val{font-family:'IBM Plex Mono',monospace;font-size:19px;font-weight:600;}
+  .hero-row .val.good{color:var(--good);}
+  .hero-row .val.bad{color:var(--bad);}
+  .hero-vs{font-size:11px;color:var(--ink-soft);margin-top:10px;font-family:'IBM Plex Mono',monospace;}
+  .hero-winner{
+    position:absolute; top:14px; right:14px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px; text-transform:uppercase; letter-spacing:.05em;
+    border:1px solid var(--stamp); color:var(--stamp);
+    padding:2px 6px; border-radius:10px;
+    transform:rotate(3deg);
+  }
+
+  /* ---------- sections ---------- */
+  section{padding:34px 0;}
+  section + section{border-top:1px solid var(--line);}
+  h2.section-label{
+    font-family:'Fraunces',serif;
+    font-weight:600;
+    font-size:23px;
+    margin:0 0 4px;
+  }
+  p.section-desc{color:var(--ink-soft);font-size:13.5px;margin:0 0 20px;max-width:680px;}
+
+  .folder-tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.07em;
+    background:var(--ink);
+    color:var(--paper);
+    padding:3px 9px;
+    border-radius:2px;
+    margin-bottom:10px;
+  }
+
+  /* ---------- assumptions ---------- */
+  .assump-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+    gap:14px 22px;
+    background:#fff;
+    border:1px solid var(--line);
+    padding:18px 20px;
+    border-radius:var(--radius);
+  }
+  .assump-item label{
+    display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;
+  }
+  .assump-item .note{font-size:10.8px;color:#8a8270;display:block;margin-top:4px;line-height:1.3;}
+
+  /* ---------- inputs ---------- */
+  input.cell{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:14px;
+    border:1px solid var(--gold);
+    background:var(--gold-bg);
+    padding:6px 8px;
+    border-radius:var(--radius);
+    width:100%;
+    color:var(--ink);
+  }
+  input.cell:focus{outline:2px solid var(--stamp);outline-offset:1px;}
+  input.cell.pct{}
+
+  /* ---------- tables ---------- */
+  .scen-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);}
+  .scen-table caption{
+    text-align:left;font-family:'Fraunces',serif;font-size:16px;font-weight:500;
+    padding:10px 14px;background:var(--paper-deep);border:1px solid var(--line);border-bottom:none;
+  }
+  .scen-table th, .scen-table td{
+    padding:9px 12px;
+    border-bottom:1px solid #EDE9DA;
+    text-align:right;
+    font-size:13.5px;
+    vertical-align:middle;
+  }
+  .scen-table th:first-child, .scen-table td:first-child{text-align:left;}
+  .scen-table thead th{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--ink-soft);
+    border-bottom:1px solid var(--ink);
+    background:#F7F4E9;
+  }
+  .scen-table td.label{display:flex;align-items:center;gap:7px;font-size:13px;}
+  .scen-table tbody tr.group td{
+    font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--ink-soft); background:#F7F4E9; padding:6px 12px; border-bottom:1px solid var(--line);
+  }
+  .scen-table td.num{font-family:'IBM Plex Mono',monospace;}
+  .scen-table td.linked{font-style:italic;color:#7A8B7E;background:#F4F7F2;}
+  .scen-table td.linked::after{content:" 🔗";font-size:10px;}
+  .scen-table tr.total td{font-weight:600;border-top:1.5px solid var(--ink);}
+  .scen-table tr.net td{font-weight:600;color:var(--teal);font-size:14.5px;}
+  .scen-table tr.delta td.num.good{color:var(--good);}
+  .scen-table tr.delta td.num.bad{color:var(--bad);}
+
+  .fx-btn{
+    width:18px;height:18px;border-radius:50%;border:1px solid var(--ink-soft);
+    background:#fff;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;
+    font-size:10px;line-height:1;cursor:pointer;flex:0 0 auto;
+  }
+  .fx-btn:hover{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .fx-btn.active{background:var(--stamp);border-color:var(--stamp);color:#fff;}
+
+  tr.explain{display:none;}
+  tr.explain.open{display:table-row;}
+  tr.explain td{
+    background:#FBF8EE;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    text-align:left;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+  }
+  tr.explain .line{padding:2px 0;}
+  tr.explain b{color:var(--ink);font-weight:600;}
+
+  /* ---------- comparison ---------- */
+  .compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .compare-card{background:#fff;border:1px solid var(--line);padding:18px;border-radius:var(--radius);position:relative;overflow:hidden;}
+  .compare-card h4{font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 14px;}
+  .bar-row{margin-bottom:12px;}
+  .bar-row .bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+  .bar-label .v{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .bar-track{height:10px;background:#EFEBDC;border-radius:6px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:6px;}
+  .bar-fill.forf{background:var(--gold);}
+  .bar-fill.ord{background:var(--teal);}
+  .diff-line{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:10px;color:var(--ink-soft);}
+
+  .stamp{
+    position:absolute; top:14px; right:14px;
+    width:92px;height:92px;border-radius:50%;
+    border:2.5px solid var(--stamp);
+    color:var(--stamp);
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
+    transform:rotate(-9deg);
+    mix-blend-mode:multiply;
+    opacity:.88;
+    padding:6px;
+  }
+  .stamp::before{
+    content:"";position:absolute;inset:5px;border:1px solid var(--stamp);border-radius:50%;
+  }
+
+  footer{padding:30px 24px;text-align:center;color:var(--ink-soft);font-size:12px;font-family:'IBM Plex Mono',monospace;}
+
+  @media (max-width:900px){
+    .hero-grid, .compare-grid{grid-template-columns:1fr;}
+    .reset-btn{position:static;display:inline-block;margin-top:14px;}
+  }
+
+  @media print{
+    @page{ size:A4; margin:14mm; }
+    body{background:#fff;}
+    nav.tabs, .reset-btn{display:none;}
+    section{break-inside:avoid;padding:14px 0;}
+    .scen-table{break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+
+<header class="doc-head">
+  <div class="wrap">
+    <div class="doc-ref">
+      <span>Mod. RHE&nbsp;/&nbsp;2026 — Rate &amp; Hours Explorer</span>
+      <span id="lastEdited">All figures recalculate live</span>
+    </div>
+    <h1>Rate &amp; Hours Explorer</h1>
+    <p class="subtitle">Edit any amber cell — hourly rates, hours, or the underlying assumptions — and every total, tax line and comparison updates immediately. Click the <b>ƒ</b> markers to see exactly how a figure was calculated.</p>
+    <button class="reset-btn" id="resetBtn">↺ Reset to original figures</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <a href="#hero">Summary</a>
+  <a href="#baseline">Employer baseline</a>
+  <a href="#forf">Regime Forfettario</a>
+  <a href="#ord">Regime Ordinario</a>
+  <a href="#compare">Forfettario vs Ordinario</a>
+</nav>
+
+<div class="wrap">
+
+  <section class="hero" id="hero">
+    <h2 class="section-label">Net monthly take-home, at a glance</h2>
+    <p class="hero-note">What lands in your account each month under each regime, for each hours scenario — compared with what the school currently spends employing you (excl. lost bonuses).</p>
+    <div class="hero-grid" id="heroGrid"></div>
+  </section>
+
+  <section id="baseline">
+    <span class="folder-tag">Reference only</span>
+    <h2 class="section-label">Employer baseline — what the school currently pays</h2>
+    <p class="section-desc">This is not your salary — it's the school's full monthly cost of employing you, including their contributions, TFR and the bonuses you'd lose as a contractor. Every comparison below is measured against it.</p>
+    <div class="assump-grid" id="baselineGrid"></div>
+    <table class="scen-table" style="margin-top:14px;max-width:520px;">
+      <tbody id="baselineResults"></tbody>
+    </table>
+  </section>
+
+  <section id="forf">
+    <span class="folder-tag">Sheet 1</span>
+    <h2 class="section-label">Regime Forfettario</h2>
+    <p class="section-desc">Flat-rate scheme: tax is calculated on a notional taxable income (revenue × coefficient), not your real expenses.</p>
+    <h3 style="font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 10px;">Assumptions</h3>
+    <div class="assump-grid" id="forfAssumpGrid"></div>
+    <table class="scen-table" style="margin-top:20px;">
+      <caption>Scenarios — edit rate &amp; hours freely</caption>
+      <thead><tr><th>Item</th><th>Scenario 1</th><th>Scenario 2</th><th>Scenario 3</th></tr></thead>
+      <tbody id="forfBody"></tbody>
+    </table>
+  </section>
+
+  <section id="ord">
+    <span class="folder-tag">Sheet 2</span>
+    <h2 class="section-label">Regime Ordinario</h2>
+    <p class="section-desc">Ordinary scheme: real deductible expenses, progressive IRPEF brackets, regional &amp; municipal surtax. Hours are <i>linked</i> from Regime Forfettario above (grey, chained cells) — rates here are independent and yours to set.</p>
+    <h3 style="font-family:'Fraunces',serif;font-weight:500;font-size:15px;margin:0 0 10px;">Assumptions</h3>
+    <div class="assump-grid" id="ordAssumpGrid"></div>
+    <table class="scen-table" style="margin-top:20px;">
+      <caption>Scenarios — rates editable, hours linked</caption>
+      <thead><tr><th>Item</th><th>Scenario 1</th><th>Scenario 2</th><th>Scenario 3</th></tr></thead>
+      <tbody id="ordBody"></tbody>
+    </table>
+  </section>
+
+  <section id="compare">
+    <span class="folder-tag">Verdict</span>
+    <h2 class="section-label">Forfettario vs Ordinario — which pays more net?</h2>
+    <p class="section-desc">Fair only when the rates on both sheets match — if you've set different rates per regime above, this compares those choices, not the regimes themselves.</p>
+    <div class="compare-grid" id="compareGrid"></div>
+  </section>
+
+</div>
+
+<footer>Built from your Rate &amp; Hours Explorer spreadsheet — all formulas reproduced exactly, nothing recalculated differently. Figures are planning estimates; confirm coefficients and rates with your commercialista.</footer>
+
+<script>
+const fmtE = n => new Intl.NumberFormat('en-GB',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+const fmtE2 = n => new Intl.NumberFormat('en-GB',{style:'currency',currency:'EUR',maximumFractionDigits:2}).format(n||0);
+const fmtN = (n,d=0) => new Intl.NumberFormat('en-GB',{maximumFractionDigits:d}).format(n||0);
+const fmtPct = (n,d=1) => (100*(n||0)).toFixed(d)+'%';
+
+const defaults = {
+  baseline:{ grossMonthly:1140.46, inpsEmp:0.2381, inail:0.0025, tfr:79.92, lostBonuses:153.45 },
+  forf:{
+    teachingCoeff:0.78, itCoeff:0.67, inpsRate:0.2607, taxSubRate:0.05,
+    scen:[ {teachRate:18, teachHours:369, itRate:14, itHours:0},
+           {teachRate:18, teachHours:389, itRate:14, itHours:276},
+           {teachRate:18, teachHours:409, itRate:14, itHours:552} ]
+  },
+  ord:{
+    deductiblePct:0.10, inpsRate:0.2607, noTaxThreshold:5500,
+    b1Ceil:28000, b1Rate:0.23, b2Ceil:50000, b2Rate:0.33, b3Rate:0.43,
+    regionalAddiz:0.0173, municipalAddiz:0.007, vatRate:0.22,
+    scen:[ {teachRate:18, itRate:14}, {teachRate:18, itRate:14}, {teachRate:18, itRate:14} ]
+  }
+};
+
+let state = JSON.parse(JSON.stringify(defaults));
+
+function compute(){
+  const b = state.baseline;
+  const baseline = {
+    annualExcl: (b.grossMonthly + b.grossMonthly*b.inpsEmp + b.grossMonthly*b.inail + b.tfr) * 12,
+    annualIncl: (b.grossMonthly + b.grossMonthly*b.inpsEmp + b.grossMonthly*b.inail + b.tfr + b.lostBonuses) * 12,
+  };
+
+  const forf = state.forf.scen.map(s=>{
+    const teachRevenue = s.teachRate*s.teachHours;
+    const itRevenue = s.itRate*s.itHours;
+    const totalHours = s.teachHours+s.itHours;
+    const totalRevenue = teachRevenue+itRevenue;
+    const vsExcl = totalRevenue - baseline.annualExcl;
+    const vsIncl = totalRevenue - baseline.annualIncl;
+    const taxableIncome = teachRevenue*state.forf.teachingCoeff + itRevenue*state.forf.itCoeff;
+    const inps = taxableIncome*state.forf.inpsRate;
+    const taxSub = (taxableIncome-inps)*state.forf.taxSubRate;
+    const totalTax = inps+taxSub;
+    const netAnnual = taxableIncome-totalTax;
+    const netMonthly = netAnnual/12;
+    const netPerHour = totalHours? netAnnual/totalHours : 0;
+    const netMargin = totalRevenue? netAnnual/totalRevenue : 0;
+    return {teachRevenue,itRevenue,totalHours,totalRevenue,vsExcl,vsIncl,taxableIncome,inps,taxSub,totalTax,netAnnual,netMonthly,netPerHour,netMargin,s};
+  });
+
+  const ord = state.ord.scen.map((s,i)=>{
+    const teachHours = state.forf.scen[i].teachHours;
+    const itHours = state.forf.scen[i].itHours;
+    const teachRevenue = s.teachRate*teachHours;
+    const itRevenue = s.itRate*itHours;
+    const totalHours = teachHours+itHours;
+    const totalRevenue = teachRevenue+itRevenue;
+    const invoiceVAT = totalRevenue*(1+state.ord.vatRate);
+    const deductible = totalRevenue*state.ord.deductiblePct;
+    const netProfIncome = totalRevenue-deductible;
+    const inps = netProfIncome*state.ord.inpsRate;
+    const irpefBase = netProfIncome-inps;
+    let irpef=0, addiz=0;
+    if(irpefBase>state.ord.noTaxThreshold){
+      irpef = Math.min(irpefBase,state.ord.b1Ceil)*state.ord.b1Rate
+            + Math.max(Math.min(irpefBase,state.ord.b2Ceil)-state.ord.b1Ceil,0)*state.ord.b2Rate
+            + Math.max(irpefBase-state.ord.b2Ceil,0)*state.ord.b3Rate;
+      addiz = irpefBase*(state.ord.regionalAddiz+state.ord.municipalAddiz);
+    }
+    const totalTax = irpef+addiz;
+    const netAnnual = netProfIncome-inps-totalTax;
+    const netMonthly = netAnnual/12;
+    const vsExcl = totalRevenue - baseline.annualExcl;
+    const vsIncl = totalRevenue - baseline.annualIncl;
+    const netPerHour = totalHours? netAnnual/totalHours : 0;
+    const netMargin = totalRevenue? netAnnual/totalRevenue : 0;
+    return {teachHours,itHours,teachRevenue,itRevenue,totalHours,totalRevenue,invoiceVAT,deductible,netProfIncome,inps,irpefBase,irpef,addiz,totalTax,netAnnual,netMonthly,vsExcl,vsIncl,netPerHour,netMargin,s};
+  });
+
+  const compare = forf.map((f,i)=>{
+    const diff = ord[i].netAnnual - f.netAnnual;
+    return { forfNet:f.netAnnual, ordNet:ord[i].netAnnual, diff, better: diff>=0?'Ordinario':'Forfettario' };
+  });
+
+  return {baseline, forf, ord, compare};
+}
+
+function bindInput(path, value, opts={}){
+  const id = 'inp_'+path.replace(/[.\[\]]/g,'_');
+  return `<input class="cell" type="text" inputmode="decimal" data-path="${path}" value="${value}" id="${id}">`;
+}
+
+function setByPath(obj, path, val){
+  const parts = path.split('.');
+  let o = obj;
+  for(let i=0;i<parts.length-1;i++){
+    const p = parts[i].match(/(\w+)\[(\d+)\]/);
+    o = p ? o[p[1]][p[2]] : o[parts[i]];
+  }
+  const last = parts[parts.length-1].match(/(\w+)\[(\d+)\]/);
+  if(last){ o[last[1]][last[2]] = val; } else { o[parts[parts.length-1]] = val; }
+}
+
+function fxRow(id, label, cells, explainFn){
+  return `<tr data-row="${id}">
+    <td class="label"><button class="fx-btn" data-explain="${id}">ƒ</button> ${label}</td>
+    ${cells}
+  </tr>
+  <tr class="explain" id="exp_${id}"><td colspan="4">${explainFn()}</td></tr>`;
+}
+
+function renderBaseline(R){
+  const b = state.baseline;
+  document.getElementById('baselineGrid').innerHTML = `
+    <div class="assump-item"><label>Gross payable, monthly (€)</label>${bindInput('baseline.grossMonthly', b.grossMonthly)}</div>
+    <div class="assump-item"><label>INPS employer rate</label>${bindInput('baseline.inpsEmp', b.inpsEmp, {pct:true})}<span class="note">Unconfirmed estimate, standard private-sector rate.</span></div>
+    <div class="assump-item"><label>INAIL rate</label>${bindInput('baseline.inail', b.inail, {pct:true})}<span class="note">Typical low-risk teaching rate, unconfirmed.</span></div>
+    <div class="assump-item"><label>TFR (severance), monthly (€)</label>${bindInput('baseline.tfr', b.tfr)}</div>
+    <div class="assump-item"><label>Lost bonuses, monthly (€)</label>${bindInput('baseline.lostBonuses', b.lostBonuses)}<span class="note">State tax credits that disappear as a contractor.</span></div>
+  `;
+  document.getElementById('baselineResults').innerHTML = `
+    <tr class="total"><td class="label">Annual employer cost — excl. bonuses</td><td class="num" colspan="3">${fmtE(R.baseline.annualExcl)}</td></tr>
+    <tr class="total"><td class="label">Annual employer cost — incl. lost bonuses</td><td class="num" colspan="3">${fmtE(R.baseline.annualIncl)}</td></tr>
+  `;
+}
+
+function renderForf(R){
+  const f = state.forf;
+  document.getElementById('forfAssumpGrid').innerHTML = `
+    <div class="assump-item"><label>Teaching coefficient (redditività)</label>${bindInput('forf.teachingCoeff', f.teachingCoeff, {pct:true})}<span class="note">ATECO 85.59.x — confirm with accountant.</span></div>
+    <div class="assump-item"><label>IT services coefficient (redditività)</label>${bindInput('forf.itCoeff', f.itCoeff, {pct:true})}<span class="note">ATECO 62.0x "altre attività" group — confirm.</span></div>
+    <div class="assump-item"><label>INPS Gestione Separata rate</label>${bindInput('forf.inpsRate', f.inpsRate, {pct:true})}</div>
+    <div class="assump-item"><label>Tax substitute rate (imposta sostitutiva)</label>${bindInput('forf.taxSubRate', f.taxSubRate, {pct:true})}<span class="note">5% = start-up years 1–5; 15% afterwards.</span></div>
+  `;
+
+  const cells = key => [0,1,2].map(i=>`<td>${bindInput(`forf.scen[${i}].${key}`, f.scen[i][key])}</td>`).join('');
+  const numCells = (arr, fmt=fmtE) => arr.map(v=>`<td class="num">${fmt(v)}</td>`).join('');
+
+  let html = `<tr class="group"><td colspan="4">Your hours &amp; rates</td></tr>
+    <tr><td class="label">Teaching — hourly rate (€)</td>${cells('teachRate')}</tr>
+    <tr><td class="label">Teaching — annual hours</td>${cells('teachHours')}</tr>`;
+  html += fxRow('teachRev','Teaching — annual revenue', numCells(R.forf.map(r=>r.teachRevenue)),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: <b>${fmtN(f.scen[i].teachRate)}</b> × <b>${fmtN(f.scen[i].teachHours)} h</b> = <b>${fmtE2(r.teachRevenue)}</b></div>`).join(''));
+
+  html += `<tr><td class="label">IT Support/Dev — hourly rate (€)</td>${cells('itRate')}</tr>
+    <tr><td class="label">IT Support/Dev — annual hours</td>${cells('itHours')}</tr>`;
+  html += fxRow('itRev','IT Support/Dev — annual revenue', numCells(R.forf.map(r=>r.itRevenue)),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: <b>${fmtN(f.scen[i].itRate)}</b> × <b>${fmtN(f.scen[i].itHours)} h</b> = <b>${fmtE2(r.itRevenue)}</b></div>`).join(''));
+
+  html += `<tr class="group"><td colspan="4">Totals</td></tr>`;
+  html += `<tr class="total"><td class="label">Total annual billable hours</td>${numCells(R.forf.map(r=>r.totalHours), v=>fmtN(v))}</tr>`;
+  html += `<tr class="total"><td class="label">Total annual revenue (invoiced)</td>${numCells(R.forf.map(r=>r.totalRevenue))}</tr>`;
+
+  html += fxRow('vsExcl','vs employer baseline — excl. bonuses', R.forf.map(r=>`<td class="num ${r.vsExcl>=0?'good':'bad'}">${fmtE(r.vsExcl)}</td>`).join(''),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE(r.totalRevenue)} − ${fmtE(R.baseline.annualExcl)} = <b>${fmtE(r.vsExcl)}</b> ${r.vsExcl>=0?'(you invoice more)':'(school currently pays more)'}</div>`).join(''));
+  html += fxRow('vsIncl','vs employer baseline — incl. lost bonuses', R.forf.map(r=>`<td class="num ${r.vsIncl>=0?'good':'bad'}">${fmtE(r.vsIncl)}</td>`).join(''),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE(r.totalRevenue)} − ${fmtE(R.baseline.annualIncl)} = <b>${fmtE(r.vsIncl)}</b></div>`).join(''));
+
+  html += `<tr class="group"><td colspan="4">Tax &amp; contributions</td></tr>`;
+  html += fxRow('taxable','Taxable income', numCells(R.forf.map(r=>r.taxableIncome)),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.teachRevenue)} × ${fmtPct(f.teachingCoeff)} + ${fmtE2(r.itRevenue)} × ${fmtPct(f.itCoeff)} = <b>${fmtE2(r.taxableIncome)}</b></div>`).join(''));
+  html += fxRow('inps','INPS Gestione Separata', numCells(R.forf.map(r=>r.inps)),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.taxableIncome)} × ${fmtPct(f.inpsRate)} = <b>${fmtE2(r.inps)}</b></div>`).join(''));
+  html += fxRow('taxSub','Tax substitute (imposta sostitutiva)', numCells(R.forf.map(r=>r.taxSub)),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: (${fmtE2(r.taxableIncome)} − ${fmtE2(r.inps)}) × ${fmtPct(f.taxSubRate)} = <b>${fmtE2(r.taxSub)}</b></div>`).join(''));
+  html += `<tr class="total"><td class="label">Total tax + contributions</td>${numCells(R.forf.map(r=>r.totalTax))}</tr>`;
+
+  html += `<tr class="group"><td colspan="4">Net result</td></tr>`;
+  html += `<tr class="net"><td class="label">NET ANNUAL (take-home)</td>${numCells(R.forf.map(r=>r.netAnnual))}</tr>`;
+  html += `<tr class="net"><td class="label">NET MONTHLY (take-home)</td>${numCells(R.forf.map(r=>r.netMonthly))}</tr>`;
+  html += fxRow('netHr','Net €/hour — blended', R.forf.map(r=>`<td class="num">${fmtE2(r.netPerHour)}</td>`).join(''),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.netAnnual)} ÷ ${fmtN(r.totalHours)} h = <b>${fmtE2(r.netPerHour)}</b>/h</div>`).join(''));
+  html += fxRow('netMargin','Net margin kept (% of revenue)', R.forf.map(r=>`<td class="num">${fmtPct(r.netMargin)}</td>`).join(''),
+    ()=>R.forf.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.netAnnual)} ÷ ${fmtE2(r.totalRevenue)} = <b>${fmtPct(r.netMargin)}</b></div>`).join(''));
+
+  document.getElementById('forfBody').innerHTML = html;
+}
+
+function renderOrd(R){
+  const o = state.ord;
+  document.getElementById('ordAssumpGrid').innerHTML = `
+    <div class="assump-item"><label>Deductible expenses (% of revenue)</label>${bindInput('ord.deductiblePct', o.deductiblePct, {pct:true})}</div>
+    <div class="assump-item"><label>INPS Gestione Separata rate</label>${bindInput('ord.inpsRate', o.inpsRate, {pct:true})}</div>
+    <div class="assump-item"><label>No-tax area threshold (€)</label>${bindInput('ord.noTaxThreshold', o.noTaxThreshold)}</div>
+    <div class="assump-item"><label>IRPEF bracket 1 ceiling (€)</label>${bindInput('ord.b1Ceil', o.b1Ceil)}</div>
+    <div class="assump-item"><label>IRPEF bracket 1 rate</label>${bindInput('ord.b1Rate', o.b1Rate, {pct:true})}</div>
+    <div class="assump-item"><label>IRPEF bracket 2 ceiling (€)</label>${bindInput('ord.b2Ceil', o.b2Ceil)}</div>
+    <div class="assump-item"><label>IRPEF bracket 2 rate</label>${bindInput('ord.b2Rate', o.b2Rate, {pct:true})}<span class="note">2026: reduced from 35% to 33%.</span></div>
+    <div class="assump-item"><label>IRPEF bracket 3 rate (above ceiling 2)</label>${bindInput('ord.b3Rate', o.b3Rate, {pct:true})}</div>
+    <div class="assump-item"><label>Regional addizionale (avg.)</label>${bindInput('ord.regionalAddiz', o.regionalAddiz, {pct:true})}</div>
+    <div class="assump-item"><label>Municipal addizionale (avg.)</label>${bindInput('ord.municipalAddiz', o.municipalAddiz, {pct:true})}</div>
+    <div class="assump-item"><label>VAT rate (IVA)</label>${bindInput('ord.vatRate', o.vatRate, {pct:true})}</div>
+  `;
+
+  const rateCells = key => [0,1,2].map(i=>`<td>${bindInput(`ord.scen[${i}].${key}`, o.scen[i][key])}</td>`).join('');
+  const linkedCells = arr => arr.map(v=>`<td class="num linked">${fmtN(v)} h</td>`).join('');
+  const numCells = (arr, fmt=fmtE) => arr.map(v=>`<td class="num">${fmt(v)}</td>`).join('');
+
+  let html = `<tr class="group"><td colspan="4">Your rates &amp; linked hours</td></tr>
+    <tr><td class="label">Teaching — hourly rate (€)</td>${rateCells('teachRate')}</tr>
+    <tr><td class="label">Teaching — annual hours (linked)</td>${linkedCells(R.ord.map(r=>r.teachHours))}</tr>`;
+  html += fxRow('teachRevO','Teaching — annual revenue', numCells(R.ord.map(r=>r.teachRevenue)),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: <b>${fmtN(o.scen[i].teachRate)}</b> × <b>${fmtN(r.teachHours)} h</b> = <b>${fmtE2(r.teachRevenue)}</b></div>`).join(''));
+
+  html += `<tr><td class="label">IT Support/Dev — hourly rate (€)</td>${rateCells('itRate')}</tr>
+    <tr><td class="label">IT Support/Dev — annual hours (linked)</td>${linkedCells(R.ord.map(r=>r.itHours))}</tr>`;
+  html += fxRow('itRevO','IT Support/Dev — annual revenue', numCells(R.ord.map(r=>r.itRevenue)),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: <b>${fmtN(o.scen[i].itRate)}</b> × <b>${fmtN(r.itHours)} h</b> = <b>${fmtE2(r.itRevenue)}</b></div>`).join(''));
+
+  html += `<tr class="group"><td colspan="4">Totals</td></tr>`;
+  html += `<tr class="total"><td class="label">Total annual hours</td>${numCells(R.ord.map(r=>r.totalHours), v=>fmtN(v))}</tr>`;
+  html += `<tr class="total"><td class="label">Total annual revenue (compenso)</td>${numCells(R.ord.map(r=>r.totalRevenue))}</tr>`;
+  html += fxRow('invVAT','Invoice total incl. VAT (informational)', numCells(R.ord.map(r=>r.invoiceVAT)),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.totalRevenue)} × (1 + ${fmtPct(o.vatRate)}) = <b>${fmtE2(r.invoiceVAT)}</b> — what the client pays; doesn't change your net.</div>`).join(''));
+
+  html += `<tr class="group"><td colspan="4">Tax &amp; contributions</td></tr>`;
+  html += fxRow('deduct','Deductible expenses', numCells(R.ord.map(r=>r.deductible)),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.totalRevenue)} × ${fmtPct(o.deductiblePct)} = <b>${fmtE2(r.deductible)}</b></div>`).join(''));
+  html += `<tr class="total"><td class="label">Net professional income</td>${numCells(R.ord.map(r=>r.netProfIncome))}</tr>`;
+  html += fxRow('inpsO','INPS Gestione Separata', numCells(R.ord.map(r=>r.inps)),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.netProfIncome)} × ${fmtPct(o.inpsRate)} = <b>${fmtE2(r.inps)}</b></div>`).join(''));
+  html += `<tr class="total"><td class="label">IRPEF taxable base (net of INPS)</td>${numCells(R.ord.map(r=>r.irpefBase))}</tr>`;
+  html += fxRow('irpef','IRPEF (progressive, with no-tax area)', numCells(R.ord.map(r=>r.irpef)),
+    ()=>R.ord.map((r,i)=>r.irpefBase<=o.noTaxThreshold
+      ? `<div class="line">Sc.${i+1}: base ${fmtE2(r.irpefBase)} ≤ threshold ${fmtE(o.noTaxThreshold)} → <b>${fmtE2(0)}</b></div>`
+      : `<div class="line">Sc.${i+1}: min(${fmtE2(r.irpefBase)},${fmtE(o.b1Ceil)})×${fmtPct(o.b1Rate)} + max(min(base,${fmtE(o.b2Ceil)})−${fmtE(o.b1Ceil)},0)×${fmtPct(o.b2Rate)} + max(base−${fmtE(o.b2Ceil)},0)×${fmtPct(o.b3Rate)} = <b>${fmtE2(r.irpef)}</b></div>`
+    ).join(''));
+  html += fxRow('addiz','Regional + municipal addizionali', numCells(R.ord.map(r=>r.addiz)),
+    ()=>R.ord.map((r,i)=>r.irpefBase<=o.noTaxThreshold
+      ? `<div class="line">Sc.${i+1}: below threshold → <b>${fmtE2(0)}</b></div>`
+      : `<div class="line">Sc.${i+1}: ${fmtE2(r.irpefBase)} × (${fmtPct(o.regionalAddiz)} + ${fmtPct(o.municipalAddiz)}) = <b>${fmtE2(r.addiz)}</b></div>`
+    ).join(''));
+  html += `<tr class="total"><td class="label">Total tax (IRPEF + addizionali)</td>${numCells(R.ord.map(r=>r.totalTax))}</tr>`;
+
+  html += `<tr class="group"><td colspan="4">vs employer baseline</td></tr>`;
+  html += R.ord.map((r,i)=>'').length ? '' : '';
+  html += fxRow('vsExclO','vs baseline — excl. bonuses', R.ord.map(r=>`<td class="num ${r.vsExcl>=0?'good':'bad'}">${fmtE(r.vsExcl)}</td>`).join(''),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE(r.totalRevenue)} − ${fmtE(R.baseline.annualExcl)} = <b>${fmtE(r.vsExcl)}</b></div>`).join(''));
+  html += fxRow('vsInclO','vs baseline — incl. lost bonuses', R.ord.map(r=>`<td class="num ${r.vsIncl>=0?'good':'bad'}">${fmtE(r.vsIncl)}</td>`).join(''),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE(r.totalRevenue)} − ${fmtE(R.baseline.annualIncl)} = <b>${fmtE(r.vsIncl)}</b></div>`).join(''));
+
+  html += `<tr class="group"><td colspan="4">Net result</td></tr>`;
+  html += `<tr class="net"><td class="label">NET ANNUAL (take-home)</td>${numCells(R.ord.map(r=>r.netAnnual))}</tr>`;
+  html += `<tr class="net"><td class="label">NET MONTHLY (take-home)</td>${numCells(R.ord.map(r=>r.netMonthly))}</tr>`;
+  html += fxRow('netHrO','Net €/hour — blended', R.ord.map(r=>`<td class="num">${fmtE2(r.netPerHour)}</td>`).join(''),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.netAnnual)} ÷ ${fmtN(r.totalHours)} h = <b>${fmtE2(r.netPerHour)}</b>/h</div>`).join(''));
+  html += fxRow('netMarginO','Net margin kept (% of revenue)', R.ord.map(r=>`<td class="num">${fmtPct(r.netMargin)}</td>`).join(''),
+    ()=>R.ord.map((r,i)=>`<div class="line">Sc.${i+1}: ${fmtE2(r.netAnnual)} ÷ ${fmtE2(r.totalRevenue)} = <b>${fmtPct(r.netMargin)}</b></div>`).join(''));
+
+  document.getElementById('ordBody').innerHTML = html;
+}
+
+function renderHero(R){
+  document.getElementById('heroGrid').innerHTML = [0,1,2].map(i=>{
+    const f = R.forf[i], o = R.ord[i], c = R.compare[i];
+    return `<div class="hero-card">
+      <span class="hero-winner">${c.better} wins</span>
+      <h3>Scenario ${i+1} <span class="hrs">${fmtN(f.totalHours)} h/yr</span></h3>
+      <div class="hero-row"><span class="lbl">Forfettario · net/month</span><span class="val">${fmtE(f.netMonthly)}</span></div>
+      <div class="hero-row"><span class="lbl">Ordinario · net/month</span><span class="val">${fmtE(o.netMonthly)}</span></div>
+      <div class="hero-vs">vs school baseline (excl. bonuses): Forfettario ${f.vsExcl>=0?'+':''}${fmtE(f.vsExcl)}/yr · Ordinario ${o.vsExcl>=0?'+':''}${fmtE(o.vsExcl)}/yr</div>
+    </div>`;
+  }).join('');
+}
+
+function renderCompare(R){
+  const maxNet = Math.max(...R.compare.flatMap(c=>[c.forfNet,c.ordNet]), 1);
+  document.getElementById('compareGrid').innerHTML = [0,1,2].map(i=>{
+    const c = R.compare[i];
+    return `<div class="compare-card">
+      <div class="stamp">${c.better}<br>wins</div>
+      <h4>Scenario ${i+1}</h4>
+      <div class="bar-row">
+        <div class="bar-label"><span>Forfettario net</span><span class="v">${fmtE(c.forfNet)}</span></div>
+        <div class="bar-track"><div class="bar-fill forf" style="width:${Math.max(2,100*c.forfNet/maxNet)}%"></div></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-label"><span>Ordinario net</span><span class="v">${fmtE(c.ordNet)}</span></div>
+        <div class="bar-track"><div class="bar-fill ord" style="width:${Math.max(2,100*c.ordNet/maxNet)}%"></div></div>
+      </div>
+      <div class="diff-line">Difference (Ordinario − Forfettario): <b>${c.diff>=0?'+':''}${fmtE(c.diff)}</b></div>
+    </div>`;
+  }).join('');
+}
+
+function renderAll(){
+  const R = compute();
+  renderHero(R);
+  renderBaseline(R);
+  renderForf(R);
+  renderOrd(R);
+  renderCompare(R);
+}
+
+document.addEventListener('input', e=>{
+  if(e.target.matches('input.cell[data-path]')){
+    const v = parseFloat(e.target.value);
+    setByPath(state, e.target.dataset.path, isNaN(v)?0:v);
+    const focusedPath = e.target.dataset.path;
+    const selStart = e.target.selectionStart;
+    const selEnd = e.target.selectionEnd;
+    renderAll();
+    const again = document.querySelector(`input.cell[data-path="${focusedPath}"]`);
+    if(again){
+      again.focus();
+      // number inputs don't support setSelectionRange in some browsers; guard it
+      try{ again.setSelectionRange(selStart, selEnd); }catch(err){}
+    }
+  }
+});
+
+document.addEventListener('click', e=>{
+  const btn = e.target.closest('.fx-btn');
+  if(btn){
+    const id = btn.dataset.explain;
+    const row = document.getElementById('exp_'+id);
+    row.classList.toggle('open');
+    btn.classList.toggle('active');
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  state = JSON.parse(JSON.stringify(defaults));
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>
